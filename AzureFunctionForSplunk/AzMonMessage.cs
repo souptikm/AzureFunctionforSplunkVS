@@ -52,7 +52,7 @@ namespace AzureFunctionForSplunk
         public string ResourceType { get; set; }
         public string ResourceName { get; set; }
         public string ResourceGroup { get; set; }
-        public string SplunkSourceType { get; set; }
+        public string SplunkSubSourceType { get; set; }
         public DateTime MessageTime { get; set; }
         public string TenantId { get; set; }
         public string ProviderName { get; set; }
@@ -64,14 +64,14 @@ namespace AzureFunctionForSplunk
             ResourceGroup = "";
             ResourceName = "";
             ResourceType = "";
-            SplunkSourceType = "";
+            SplunkSubSourceType = "";
             TenantId = "";
         }
 
         public string GetSplunkEventFromMessage()
         {
             ExpandoObject o = new ExpandoObject();
-            ((IDictionary<String, Object>)o).Add("sourcetype", SplunkSourceType);
+            ((IDictionary<String, Object>)o).Add("sub_sourcetype", SplunkSubSourceType);
             ((IDictionary<String, Object>)o).Add("time", unixTime().ToString("0.000"));
             ((IDictionary<String, Object>)o).Add("event", Message);
             string json = Newtonsoft.Json.JsonConvert.SerializeObject(o);
@@ -146,7 +146,7 @@ namespace AzureFunctionForSplunk
 
     public class AzMonActivityLog : AzMonMessage
     {
-        public AzMonActivityLog(dynamic message, string sourceType)
+        public AzMonActivityLog(dynamic message, string sub_sourcetype)
         {
             Message = message;
 
@@ -172,7 +172,7 @@ namespace AzureFunctionForSplunk
                 ProviderName = m.Groups[1].Value;
             }
 
-            SplunkSourceType = sourceType;
+            SplunkSubSourceType = sub_sourcetype;
             base.GetStandardProperties();
             base.AddStandardProperties("amal");
         }
@@ -213,7 +213,7 @@ namespace AzureFunctionForSplunk
 
     public class AzMonMetric : AzMonMessage
     {
-        public AzMonMetric(dynamic message, string sourceType)
+        public AzMonMetric(dynamic message, string sub_sourcetype)
         {
             Message = message;
 
@@ -230,7 +230,7 @@ namespace AzureFunctionForSplunk
                 throw new Exception("Unable to extract resourceid or resourceId from the message.");
             }
 
-            SplunkSourceType = sourceType;
+            SplunkSubSourceType = sub_sourcetype;
             base.GetStandardProperties();
             base.AddStandardProperties("amm");
         }
@@ -255,7 +255,7 @@ namespace AzureFunctionForSplunk
                 throw new Exception("Unable to extract resourceid or resourceId from the message.");
             }
 
-            SplunkSourceType = "azlm:compute:vm";
+            SplunkSubSourceType = "azlm:compute:vm";
             base.GetStandardProperties();
             base.AddStandardProperties("azlm");
         }
@@ -280,7 +280,7 @@ namespace AzureFunctionForSplunk
                 throw new Exception("Unable to extract resourceid or resourceId from the message.");
             }
 
-            SplunkSourceType = "azll:compute:vm";
+            SplunkSubSourceType = "azll:compute:vm";
             base.GetStandardProperties();
             base.AddStandardProperties("azll");
         }
@@ -294,7 +294,7 @@ namespace AzureFunctionForSplunk
 
             ResourceType = "MICROSOFT.COMPUTE/VIRTUALMACHINES";
 
-            SplunkSourceType = "azwm:compute:vm";
+            SplunkSubSourceType = "azwm:compute:vm";
 
             if (((IDictionary<String, Object>)message).ContainsKey("dimensions"))
             {
@@ -321,7 +321,7 @@ namespace AzureFunctionForSplunk
 
             ResourceType = "MICROSOFT.COMPUTE/VIRTUALMACHINES";
 
-            SplunkSourceType = "azwm:compute:vm";
+            SplunkSubSourceType = "azwm:compute:vm";
 
             if (((IDictionary<String, Object>)message).ContainsKey("properties"))
             {

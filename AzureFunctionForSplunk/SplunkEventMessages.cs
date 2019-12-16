@@ -119,7 +119,7 @@ namespace AzureFunctionForSplunk
 
         public override void Ingest(string[] records)
         {
-            // sub_sourcetype depends on the message category
+            // sourceType depends on the message category
 
             foreach (var record in records)
             {
@@ -130,11 +130,11 @@ namespace AzureFunctionForSplunk
 
                 var splits = operationName.Split('/');
 
-                string sub_sourcetype = "";
+                string sourceType = "";
                 if (splits.Length < 3)
                 {
                     // ASC Recommendation
-                    sub_sourcetype = Utils.GetDictionaryValue("ascrecommendation", Categories) ?? "amal:asc:recommendation";
+                    sourceType = Utils.GetDictionaryValue("ascrecommendation", Categories) ?? "amal:asc:recommendation";
                 }
                 else if (splits.Length >= 3)
                 {
@@ -145,25 +145,25 @@ namespace AzureFunctionForSplunk
                     switch (provider)
                     {
                         case "MICROSOFT.SERVICEHEALTH":
-                            sub_sourcetype = Utils.GetDictionaryValue("servicehealth", Categories) ?? "amal:serviceHealth";
+                            sourceType = Utils.GetDictionaryValue("servicehealth", Categories) ?? "amal:serviceHealth";
                             break;
 
                         case "MICROSOFT.RESOURCEHEALTH":
-                            sub_sourcetype = Utils.GetDictionaryValue("resourcehealth", Categories) ?? "amal:resourceHealth";
+                            sourceType = Utils.GetDictionaryValue("resourcehealth", Categories) ?? "amal:resourceHealth";
                             break;
 
                         case "MICROSOFT.INSIGHTS":
                             if (type == "AUTOSCALESETTINGS")
                             {
-                                sub_sourcetype = Utils.GetDictionaryValue("autoscalesettings", Categories) ?? "amal:autoscaleSettings";
+                                sourceType = Utils.GetDictionaryValue("autoscalesettings", Categories) ?? "amal:autoscaleSettings";
                             }
                             else if (type == "ALERTRULES")
                             {
-                                sub_sourcetype = Utils.GetDictionaryValue("ascalert", Categories) ?? "amal:ascAlert";
+                                sourceType = Utils.GetDictionaryValue("ascalert", Categories) ?? "amal:ascAlert";
                             }
                             else
                             {
-                                sub_sourcetype = Utils.GetDictionaryValue("insights", Categories) ?? "amal:insights";
+                                sourceType = Utils.GetDictionaryValue("insights", Categories) ?? "amal:insights";
                             }
                             break;
                         case "MICROSOFT.SECURITY":
@@ -171,32 +171,32 @@ namespace AzureFunctionForSplunk
                             {
                                 if (operation == "ACTION")
                                 {
-                                    sub_sourcetype = Utils.GetDictionaryValue("ascalert", Categories) ?? "amal:asc:alert";
+                                    sourceType = Utils.GetDictionaryValue("ascalert", Categories) ?? "amal:asc:alert";
                                 }
                                 else
                                 {
-                                    sub_sourcetype = Utils.GetDictionaryValue("security", Categories) ?? "amal:security";
+                                    sourceType = Utils.GetDictionaryValue("security", Categories) ?? "amal:security";
                                 }
                             }
                             else if (type == "LOCATIONS")
                             {
-                                sub_sourcetype = Utils.GetDictionaryValue("security", Categories) ?? "amal:security";
+                                sourceType = Utils.GetDictionaryValue("security", Categories) ?? "amal:security";
                             }
                             else if (type == "TASKS")
                             {
-                                sub_sourcetype = Utils.GetDictionaryValue("ascrecommendation", Categories) ?? "amal:asc:recommendation";
+                                sourceType = Utils.GetDictionaryValue("ascrecommendation", Categories) ?? "amal:asc:recommendation";
                             }
                             break;
                         default:
                             {
                                 // administrative category
-                                sub_sourcetype = Utils.GetDictionaryValue("administrative", Categories) ?? "amal:administrative";
+                                sourceType = Utils.GetDictionaryValue("administrative", Categories) ?? "amal:administrative";
                                 break;
                             }
                     }
                 }
 
-                azureMonitorMessages.Add(new AzMonActivityLog(expandoRecord, sub_sourcetype));
+                azureMonitorMessages.Add(new AzMonActivityLog(expandoRecord, sourceType));
             }
         }
     }
@@ -210,8 +210,8 @@ namespace AzureFunctionForSplunk
 
         public override void Ingest(string[] records)
         {
-            // Subscription-based: sub_sourcetype depends on the message category and the ResourceType
-            // Tenant-based: sub_sourcetype depends on the message category and the ProviderType
+            // Subscription-based: sourceType depends on the message category and the ResourceType
+            // Tenant-based: sourceType depends on the message category and the ProviderType
 
             foreach (var record in records)
             {
@@ -230,25 +230,25 @@ namespace AzureFunctionForSplunk
                 var providerName = azMonMsg.ProviderName;
 
                 var logMessage = "";
-                var sub_sourcetype = "";
+                var sourceType = "";
                 if (azMonMsg.TenantId.Length > 0)
                 {
                     logMessage = $"********* ProviderName: {providerName}";
-                    sub_sourcetype = Utils.GetDictionaryValue(providerName.ToUpper() + "/" + category.ToUpper(), Categories) ?? "amdl:diagnostic";
+                    sourceType = Utils.GetDictionaryValue(providerName.ToUpper() + "/" + category.ToUpper(), Categories) ?? "amdl:diagnostic";
                 }
                 else
                 {
                     logMessage = $"********* ResourceType: {resourceType}";
-                    sub_sourcetype = Utils.GetDictionaryValue(resourceType.ToUpper() + "/" + category.ToUpper(), Categories) ?? "amdl:diagnostic";
+                    sourceType = Utils.GetDictionaryValue(resourceType.ToUpper() + "/" + category.ToUpper(), Categories) ?? "amdl:diagnostic";
                 }
 
                 // log categories that aren't yet in the DiagnosticLogCategories.json file.
-                if (category != "none" && sub_sourcetype == "amdl:diagnostic")
+                if (category != "none" && sourceType == "amdl:diagnostic")
                 {
                     Log.LogInformation($"{logMessage}, category: {category} *********");
                 }
 
-                azMonMsg.SplunkSubSourceType = sub_sourcetype;
+                azMonMsg.SplunkSourceType = sourceType;
 
                 azureMonitorMessages.Add(azMonMsg);
             }
@@ -264,7 +264,7 @@ namespace AzureFunctionForSplunk
 
         public override void Ingest(string[] records)
         {
-            // sub_sourcetype depends on the ResourceType
+            // sourceType depends on the ResourceType
             foreach (var record in records)
             {
                 var expandoConverter = new ExpandoObjectConverter();
@@ -274,9 +274,9 @@ namespace AzureFunctionForSplunk
 
                 var resourceType = azMonMsg.ResourceType;
 
-                var sub_sourcetype = Utils.GetDictionaryValue(resourceType, Categories) ?? "amm:metrics";
+                var sourceType = Utils.GetDictionaryValue(resourceType, Categories) ?? "amm:metrics";
 
-                azMonMsg.SplunkSubSourceType = sub_sourcetype;
+                azMonMsg.SplunkSourceType = sourceType;
 
                 azureMonitorMessages.Add(azMonMsg);
             }

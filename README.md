@@ -1,6 +1,6 @@
 ## NOTE
 
-Due to lack of resources to maintain and changes in underlying dependencies, this repo is archived. It can still be forked.  
+Due to lack of resources to maintain and changes in underlying dependencies, this repo is archived. It can still be forked. We have forked it and made changes for testing in our code. 
 
 # AzureFunctionForSplunkVS
 Azure Function sends Azure Monitor telemetry to Splunk - coded in C# / Visual Studio 2017.

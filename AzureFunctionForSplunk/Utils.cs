@@ -24,7 +24,9 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION 
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
-using Microsoft.Azure.Services.AppAuthentication;
+using Azure.Communication.Identity;
+using Azure.Core;
+using Azure.Identity;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -206,14 +208,32 @@ namespace AzureFunctionForSplunk
             }
             // log.LogInformation($"devEnvironment: {devEnvironment}, astpConnection: {astpConnection}");
 
-            string accessToken = "";
+            AccessToken accessToken=new AccessToken();
             try
             {
-                var azureServiceTokenProvider = new AzureServiceTokenProvider(
-                    connectionString: astpConnection
-                );
+                //var azureServiceTokenProvider = new AzureServiceTokenProvider(
+                //    connectionString: astpConnection
+                //);
 
-                accessToken = await azureServiceTokenProvider.GetAccessTokenAsync(serviceResourceIDURI);
+                //accessToken = await azureServiceTokenProvider.GetAccessTokenAsync(serviceResourceIDURI);
+
+                //var tokenCredential = new DefaultAzureCredential(new DefaultAzureCredentialOptions() { });
+                // accessToken = await tokenCredential.GetTokenAsync(
+                //    new TokenRequestContext(scopes: new string[] { $"ResourceId {serviceResourceIDURI}" }) { }
+                //);
+
+
+                // This code demonstrates how to retrieve your connection string
+                // from an environment variable.
+               
+                var commClient = new CommunicationIdentityClient(astpConnection);
+                var identityResponse = await commClient.CreateUserAsync();
+                var identity = identityResponse.Value;
+                Console.WriteLine($"\nCreated an identity with ID: {identity.Id}");
+                // Issue an access token with a validity of 24 hours and the "voip" scope for an identity
+                var response = await commClient.GetTokenAsync(identity, scopes: new[] { CommunicationTokenScope.VoIP });
+
+                accessToken = response.Value;
             } catch (Exception ex)
             {
                 log.LogError($"Error acquiring token from AzureServiceTokenProvider: {ex.Message}");
@@ -238,7 +258,7 @@ namespace AzureFunctionForSplunk
                     Method = HttpMethod.Post,
                     RequestUri = new Uri(proxyAddress),
                     Headers = {
-                        { HttpRequestHeader.Authorization.ToString(), "Bearer " + accessToken }
+                        { HttpRequestHeader.Authorization.ToString(), "Bearer " + accessToken.Token }
                     },
                     Content = new StringContent(bulkTransmission.ToString(), Encoding.UTF8)
                 };
